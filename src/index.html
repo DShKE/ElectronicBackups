@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>electronicbackups</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="brand">
+                <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <h1>electronicbackups</h1>
+            </div>
+            <div id="status-badge" class="status-badge">System Ready</div>
+        </header>
+
+        <main class="app-content">
+            <section class="card">
+                <div class="card-header">
+                    <h2>Backup Sources & Targets</h2>
+                    <div class="button-group">
+                        <button id="btn-add-file" class="btn btn-secondary">Add File</button>
+                        <button id="btn-add-folder" class="btn btn-secondary">Add Folder</button>
+                        <button id="btn-clear-queue" class="btn btn-danger">Clear Queue</button>
+                    </div>
+                </div>
+                <div class="queue-container">
+                    <ul id="queue-list" class="queue-list"></ul>
+                    <div id="empty-state" class="empty-state">
+                        <p>No items added to the backup queue. Click "Add File" or "Add Folder" to begin.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Automation Settings</h2>
+                <div class="automation-grid">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label class="setting-title">Run at Windows Startup</label>
+                            <span class="setting-description">Launch application automatically in the background on system boot</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-startup">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label class="setting-title">Automatic Backup Schedule</label>
+                            <span class="setting-description">Run backups periodically in the background</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-schedule">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="schedule-controls" id="schedule-controls">
+                        <label for="schedule-value">Interval:</label>
+                        <input type="number" id="schedule-value" value="1" min="1" class="input-number" />
+                        <select id="schedule-unit" class="select-dropdown">
+                            <option value="minutes">Minutes</option>
+                            <option value="hours" selected>Hours</option>
+                            <option value="days">Days</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card action-card">
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span id="progress-text">Ready to backup</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                    </div>
+                </div>
+                <div class="action-footer">
+                    <div id="last-backup-time" class="last-backup-time">Last backup: Never</div>
+                    <button id="btn-start-backup" class="btn btn-primary btn-large">Start Backup Queue</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

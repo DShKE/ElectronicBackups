@@ -1,0 +1,27 @@
+{
+  "name": "ElectronicBackups",
+  "productName": "ElectronicBackups",
+  "description": "File backupping thingy",
+  "version": "1.6.0",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "keywords": [],
+  "author": "Anon",
+  "license": "GPL-3.0-only",
+  "type": "commonjs",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@types/node": "^26.3.0",
+    "electron": "^44.0.0",
+    "eslint": "^10.9.1"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  }
+}
