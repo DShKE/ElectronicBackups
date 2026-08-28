@@ -2,7 +2,7 @@
   "name": "ElectronicBackups",
   "productName": "ElectronicBackups",
   "description": "File backupping thingy",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
