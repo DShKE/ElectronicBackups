@@ -23,6 +23,17 @@ const configFilePath = path.join(app.getPath('userData'), 'app-state.json');
 
 function setupAutoUpdater() {
     autoUpdater.autoDownload = true;
+    if (!app.isPackaged) {
+        autoUpdater.forceDevUpdateConfig = true;
+    }
+
+    autoUpdater.on('checking-for-update', () => {
+        sendToUI('update-status', { status: 'checking' });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        sendToUI('update-status', { status: 'not-available' });
+    });
 
     autoUpdater.on('update-available', (info) => {
         sendToUI('update-status', { status: 'available', info });
@@ -30,6 +41,7 @@ function setupAutoUpdater() {
 
     autoUpdater.on('update-downloaded', (info) => {
         sendToUI('update-status', { status: 'downloaded', info });
+        
         dialog.showMessageBox({
             type: 'info',
             title: 'Update Ready',
@@ -44,7 +56,20 @@ function setupAutoUpdater() {
 
     autoUpdater.on('error', (err) => {
         console.warn('Auto updater error:', err.message);
+        sendToUI('update-status', { status: 'not-available' });
     });
+
+    if (app.isPackaged || autoUpdater.forceDevUpdateConfig) {
+        autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+            console.warn('Initial update check failed:', err.message);
+        });
+
+        setInterval(() => {
+            autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+                console.warn('Scheduled update check failed:', err.message);
+            });
+        }, 60 * 60 * 1000);
+    }
 }
 
 function loadState() {
@@ -396,6 +421,10 @@ ipcMain.handle('check-for-updates', () => {
     return true;
 });
 
+ipcMain.handle('quit-and-install', () => {
+    autoUpdater.quitAndInstall();
+});
+
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('js-flags', '--expose-gc');
 
@@ -404,10 +433,6 @@ app.whenReady().then(() => {
     createTrayIcon();
     evaluateSchedule();
     setupAutoUpdater();
-
-    if (app.isPackaged) {
-        autoUpdater.checkForUpdatesAndNotify();
-    }
 
     powerMonitor.on('resume', () => {
         evaluateSchedule();

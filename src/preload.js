@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     configureSchedule: (settings) => ipcRenderer.invoke('configure-schedule', settings),
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
 
     onBackupStarted: (callback) => {
         const listener = () => callback();
