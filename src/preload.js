@@ -15,15 +15,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     configureSchedule: (settings) => ipcRenderer.invoke('configure-schedule', settings),
 
     onBackupStarted: (callback) => {
-            ipcRenderer.removeAllListeners('backup-started');
-            ipcRenderer.on('backup-started', () => callback());
-        },
-        onBackupProgress: (callback) => {
-            ipcRenderer.removeAllListeners('backup-progress');
-            ipcRenderer.on('backup-progress', (event, data) => callback(data));
-        },
-        onBackupCompleted: (callback) => {
-            ipcRenderer.removeAllListeners('backup-completed');
-            ipcRenderer.on('backup-completed', (event, result) => callback(result));
-        }
+        const listener = () => callback();
+        ipcRenderer.on('backup-started', listener);
+        return () => ipcRenderer.removeListener('backup-started', listener);
+    },
+    onBackupProgress: (callback) => {
+        const listener = (event, data) => callback(data);
+        ipcRenderer.on('backup-progress', listener);
+        return () => ipcRenderer.removeListener('backup-progress', listener);
+    },
+    onBackupCompleted: (callback) => {
+        const listener = (event, result) => callback(result);
+        ipcRenderer.on('backup-completed', listener);
+        return () => ipcRenderer.removeListener('backup-completed', listener);
+    }
 });

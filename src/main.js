@@ -161,8 +161,10 @@ function getIntervalMs(value, unit) {
 async function executeBackup(queueSource = null) {
     if (isBackingUp) return { success: false, error: 'Backup process already running' };
 
-    const queue = queueSource || loadState().queue;
-
+    if (queueSource) {
+        saveState({ queue: queueSource });
+    }
+    const queue = loadState().queue;
     if (!queue || queue.length === 0) {
         return { success: false, error: 'Queue is empty' };
     }
@@ -233,14 +235,46 @@ async function executeBackup(queueSource = null) {
             const targetDir = path.dirname(targetFilePath);
 
             try {
-                const isRoot = (targetDir === path.parse(targetDir).root);
-                if (!isRoot) {
+                const targetRoot = path.parse(targetDir).root;
+                if (!fs.existsSync(targetRoot)) {
+                    console.warn(`Skipping file: Target drive ${targetRoot} is unplugged/unavailable.`);
+                    
+                    const percent = Math.round(((index + 1) / totalFiles) * 100);
+                    sendToUI('backup-progress', {
+                        current: index + 1,
+                        total: totalFiles,
+                        percentage: percent,
+                        filename: item.relativePath
+                    });
+                    
+                    continue;
+                }
+
+                const isRoot = (targetDir === targetRoot);
+                if (!isRoot && !fs.existsSync(targetDir)) {
                     await fs.promises.mkdir(targetDir, { recursive: true });
                 }
-                await fs.promises.copyFile(item.absolutePath, targetFilePath);
-                copiedCount++;
+
+                let shouldCopy = true;
+                try {
+                    const sourceStats = await fs.promises.stat(item.absolutePath);
+                    if (fs.existsSync(targetFilePath)) {
+                        const targetStats = await fs.promises.stat(targetFilePath);
+                        if (sourceStats.size === targetStats.size && 
+                            Math.floor(sourceStats.mtimeMs) <= Math.floor(targetStats.mtimeMs)) {
+                            shouldCopy = false;
+                        }
+                    }
+                } catch {
+                    shouldCopy = true;
+                }
+
+                if (shouldCopy) {
+                    await fs.promises.copyFile(item.absolutePath, targetFilePath);
+                    copiedCount++;
+                }
             } catch (fileErr) {
-                console.warn(`Failed to copy file: ${item.absolutePath}`, fileErr);
+                console.warn(`Failed to process file ${item.absolutePath}:`, fileErr.message);
             }
 
             const percent = Math.round(((index + 1) / totalFiles) * 100);
