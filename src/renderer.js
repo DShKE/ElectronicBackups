@@ -36,6 +36,23 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+function formatBackupDate(isoString) {
+    if (!isoString) return 'Last backup: Never';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return 'Last backup: Never';
+
+    const formatted = date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    return `Last backup: ${formatted}`;
+}
+
 function updateScheduleUI() {
     if (scheduleControls) {
         scheduleControls.style.display = toggleSchedule.checked ? 'flex' : 'none';
@@ -67,10 +84,18 @@ function setupIPCListeners() {
             progressText.textContent = `Backup Complete (${result.filesCopied} files copied)`;
             progressBarFill.style.width = '100%';
             progressPercent.textContent = '100%';
-            lastBackupTime.textContent = `Last backup: ${new Date(result.lastBackupTime).toLocaleString()}`;
+            lastBackupTime.textContent = formatBackupDate(result.lastBackupTime);
         } else {
             statusBadge.textContent = 'Error';
             progressText.textContent = `Error: ${result.error}`;
+        }
+    });
+
+    window.electronAPI.onUpdateStatus((data) => {
+        if (data.status === 'available') {
+            statusBadge.textContent = 'Update Found';
+        } else if (data.status === 'downloaded') {
+            statusBadge.textContent = 'Update Ready';
         }
     });
 }
@@ -90,7 +115,7 @@ async function init() {
             scheduleUnit.value = state.schedule.intervalUnit || 'hours';
         }
         if (state.lastBackupTime) {
-            lastBackupTime.textContent = `Last backup: ${new Date(state.lastBackupTime).toLocaleString()}`;
+            lastBackupTime.textContent = formatBackupDate(state.lastBackupTime);
         }
     } catch (err) {
         console.error('Failed to load initial state:', err);

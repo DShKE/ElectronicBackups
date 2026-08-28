@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setAutoLaunch: (enable) => ipcRenderer.invoke('set-auto-launch', enable),
 
     configureSchedule: (settings) => ipcRenderer.invoke('configure-schedule', settings),
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 
     onBackupStarted: (callback) => {
         const listener = () => callback();
@@ -28,5 +29,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const listener = (event, result) => callback(result);
         ipcRenderer.on('backup-completed', listener);
         return () => ipcRenderer.removeListener('backup-completed', listener);
+    },
+    onUpdateStatus: (callback) => {
+        const listener = (event, data) => callback(data);
+        ipcRenderer.on('update-status', listener);
+        return () => ipcRenderer.removeListener('update-status', listener);
     }
 });

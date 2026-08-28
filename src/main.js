@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, powerMonitor } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,12 +8,6 @@ let tray = null;
 let isQuitting = false;
 let autoBackupTimer = null;
 let isBackingUp = false;
-
-if (require('electron-squirrel-startup')) {
-    const cmd = process.argv[1];
-    if (cmd === '--squirrel-uninstall') cleanUpUserData();
-    app.quit();
-}
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -23,20 +18,34 @@ if (!gotTheLock) {
     });
 }
 
-function cleanUpUserData() {
-    try {
-        app.setLoginItemSettings({ openAtLogin: false });
-        const userDataPath = app.getPath('userData');
-        if (fs.existsSync(userDataPath)) {
-            fs.rmSync(userDataPath, { recursive: true, force: true });
-        }
-    } catch (err) {
-        console.error('Failed to clean up user data during uninstall:', err);
-    }
-}
-
 const iconpath = path.join(__dirname, '../assets/icon.jpg');
 const configFilePath = path.join(app.getPath('userData'), 'app-state.json');
+
+function setupAutoUpdater() {
+    autoUpdater.autoDownload = true;
+
+    autoUpdater.on('update-available', (info) => {
+        sendToUI('update-status', { status: 'available', info });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        sendToUI('update-status', { status: 'downloaded', info });
+        dialog.showMessageBox({
+            type: 'info',
+            title: 'Update Ready',
+            message: 'A new version of ElectronicBackups has been downloaded. Restart now to install?',
+            buttons: ['Restart', 'Later']
+        }).then((result) => {
+            if (result.response === 0) {
+                autoUpdater.quitAndInstall();
+            }
+        });
+    });
+
+    autoUpdater.on('error', (err) => {
+        console.warn('Auto updater error:', err.message);
+    });
+}
 
 function loadState() {
     try {
@@ -348,6 +357,7 @@ ipcMain.handle('save-app-state', (event, data) => { saveState(data); return true
 ipcMain.handle('get-auto-launch', () => app.getLoginItemSettings().openAtLogin);
 ipcMain.handle('set-auto-launch', (event, enable) => {
     app.setLoginItemSettings({ openAtLogin: enable, path: app.getPath('exe') });
+    saveState({ autoLaunch: enable });
     return app.getLoginItemSettings().openAtLogin;
 });
 
@@ -379,6 +389,13 @@ ipcMain.handle('configure-schedule', (event, settings) => {
     return true;
 });
 
+ipcMain.handle('check-for-updates', () => {
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    }
+    return true;
+});
+
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('js-flags', '--expose-gc');
 
@@ -386,6 +403,11 @@ app.whenReady().then(() => {
     createWindow();
     createTrayIcon();
     evaluateSchedule();
+    setupAutoUpdater();
+
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    }
 
     powerMonitor.on('resume', () => {
         evaluateSchedule();
